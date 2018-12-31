@@ -1,0 +1,30 @@
+{
+	"maintoken": "token", 
+	"subbots": [
+		{
+			"name": "Sub1",
+			"token": "token",
+			"channel": 123456789012345678,
+			"prefix": "1?"
+		}, 
+		{
+			"name": "Sub2", 
+			"token": "token", 
+			"channel": 123456789012345679,
+			"prefix": "2?"
+		}, 
+		{
+			"name": "Sub3", 
+			"token": "token", 
+			"channel": 123456789012345670,
+			"prefix": "3?"
+		}
+	],
+	"requireTrusted": [
+		123456789012345671,
+		123456789012345672
+	],
+	"help": {
+		"permsSet": "Sets permissions for mentioned user if the author has sufficent permissions"
+	}
+}
