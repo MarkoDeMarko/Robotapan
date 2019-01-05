@@ -1,11 +1,11 @@
-import sys, asyncio, discord, time, json, os
+import sys, asyncio, discord, time, datetime, json, os
 from discord.ext import commands
 from pprint import pprint
 from enum import Enum
+from num2words import num2words
 
 config = None
 userPerms = None
-embeds = None
 
 def load(name):
     global config, userPerms, embeds
@@ -183,7 +183,7 @@ class mainBot(baseBot):
             self.bot.add_cog(cog)
 
         self.players = {}
-        self.bot.loop.create_task(self.spawnSubs())
+        #self.bot.loop.create_task(self.spawnSubs())
 
     
     async def spawnSubs(self):
@@ -206,9 +206,29 @@ class mainBot(baseBot):
     @commands.command(hidden=True)
     @permissionCheck(4)
     async def test(self, ctx):
-        pass
-    
-            
+        entries = [
+            {"value": "It should be like this", "author": ctx.author},
+            {"value": "Nah it should be like this", "author": self.bot.user}
+        ]
+
+        description = ""
+        for i, entry in enumerate(entries):
+            end = ""
+            if entry["author"]:
+                end = f", {entry['author'].mention}"
+            description += f"**{i+1}.** \"{entry['value']}\"{end}\n"
+
+        curTime = datetime.datetime(*[time.gmtime()[i] for i in range(6)])
+
+        embed = discord.Embed(
+            title=":bar_chart:** How should this poll look? **:bar_chart:", 
+            description=description, timestamp=curTime)
+        embed.set_footer(text=f"Created by {ctx.author.name}")
+        message = await ctx.send(embed=embed)
+
+        for i in range(len(entries)):
+            await message.add_reaction(f"{i+1}\u20e3")
+
 class permissions:
     @commands.group(invoke_without_command=True)
     async def perms(self, ctx):
@@ -251,48 +271,80 @@ class permissions:
 
 
 class pollInstance:
-        def __init__(self, name, description, reqPerm, maxPerUser):
+        def __init__(self, ctx, pollID, name, reqPerm):
             self.name = name
             self.reqPerm = reqPerm
-            self.maxPerUser = maxPerUser
             self.message = None
-            self.embed = discord.Embed()
+            self.id = pollID
+
+            self.date = datetime.datetime(*[time.gmtime()[i] for i in range(6)])
+            self.entries = []
+
+            self.embed = discord.Embed(
+                title=f":bar_chart: **{name}** :bar_chart:",
+                timestamp=self.date
+                )
+            self.embed.set_footer(text=f"Created by {ctx.author.name} • id:{self.id}")
+
+        def createDescription(self):
+            description = ""
+            for i, entry in enumerate(self.entries):
+                end = ""
+                if entry["author"]:
+                    end = f", {entry['author'].mention}"
+                description += f"**{i+1}.** \"{entry['value']}\"{end}\n"
+            return description            
 
         def add(self, entry, author):
-            self.embed.add_field(name=entry, value=f"Added by {author}")
+            self.entries.append({"entry":entry, "author"=author})
 
         def remove(self, index):
-            return self.entries.pop(index - 1)
+            return self.embed.remove_field(index - 1)
 
-        async def send(self, pin=False):
+        async def send(self, channel, pin=False):
             if self.message:
                 return False
-            embed 
-
+            
 
 class polls:
     def __init__(self):
-        self.current = []
+        self.current = {}
+
+    def create_ID(self):
+        ID = str(len(self.current.keys()))
+        if len(ID) == 1:
+            ID = "0" + ID
+        return ID
 
     @commands.command()
     @permissionCheck(0)
-    async def poll(self, ctx, *args):
-        pass
-
+    async def poll(self, ctx, name, *alternatives):
+        poll = pollInstance(ctx, name, self.create_ID(), 0)
+        for value in alternatives:
+            poll.add(value, None)
+        poll.createDescription()
+        poll.send()
+        
     @commands.group(invoke_without_command=True)
     @permissionCheck(0)
     async def activepoll(self, ctx):
         await ctx.send("```No subcommand of activepoll was passed.\nUsage: !activepoll <subcommand> [args...]\nFor more information use !help activepoll <subCommand>```")
 
     @activepoll.command(name="create")
-    @permissionCheck(3)
-    async def activepoll_create(self, ctx, name, reqPerm:int, maxPerUser:int, ):
-        pass
+    @permissionCheck(2)
+    async def activepoll_create(self, ctx, name, reqPerm:int=0, *options):
+        entries = []
+        for value in options:
+            entries.append({"value":value, "name": None})
+        poll = pollInstance(ctx, name, reqPerm, entries)
+        
+
 
     @activepoll.command(name="add")
     @permissionCheck(0)
-    async def activepoll_add(self, ctx):
-        pass
+    async def activepoll_add(self, ctx, *, entry):
+        if ctx.channel not in self.current.keys():
+            await ctx.send(f"There is currently not an Active Poll ongoing in this channel, {ctx.author.mention}")
 
 
 class music:
