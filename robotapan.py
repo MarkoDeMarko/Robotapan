@@ -47,7 +47,7 @@ if not load("perms"):
     print("Failed to load permissions")
     sys.exit()
 
-class permLevels(Enum):
+class permLevel(Enum):
     noAccess = -1
     default = 0
     trusted = 1
@@ -55,19 +55,19 @@ class permLevels(Enum):
     administrator = 3
     superadministrator = 4
 
-def permissionCheck(reqPerm:int):
+def permissionCheck(reqPerm : permLevel):
     def predicate(ctx):
         try:
-            if userPerms[str(ctx.author.id)] == -1:
+            if permLevel(userPerms[str(ctx.author.id)]) == permLevel.noAccess:
                 #asyncio.get_event_loop().create_task(ctx.send(f"You do not have permission to use any of this bot's commands, {ctx.author.mention}"))
                 return False
         except:
-            if reqPerm == 0:#if the try statement catches an error then the author must have the default permLevel (0)
+            if reqPerm == permLevel.default:#if the try statement catches an error then the author must have the default permLevel (0)
                 return True
             else:
                 #asyncio.get_event_loop().create_task(ctx.send(f"You do not have sufficient permissions for this action, {ctx.author.mention}"))
                 return False
-        if userPerms[str(ctx.author.id)] >= reqPerm:
+        if userPerms[str(ctx.author.id)] >= reqPerm.value:
             return True
         else:
             #asyncio.get_event_loop().create_task(ctx.send(f"You do not have sufficient permissions for this action, {ctx.author.mention}"))
@@ -198,13 +198,13 @@ class mainBot(baseBot):
 
 
     @commands.command()
-    @permissionCheck(4)
+    @permissionCheck(permLevel.superadministrator)
     async def stop(self, ctx):
         raise KeyboardInterrupt
 
 
     @commands.command(hidden=True)
-    @permissionCheck(4)
+    @permissionCheck(permLevel.superadministrator)
     async def test(self, ctx):
         entries = [
             {"value": "It should be like this", "author": ctx.author},
@@ -236,13 +236,13 @@ class permissions:
 
 
     @perms.command(name="set", description=config["help"]["permsSet"].format(prefix="!"))
-    @permissionCheck(3)
+    @permissionCheck(permLevel.administrator)
     async def perms_set(self, ctx, member: discord.Member, permLevel : int):
-        authorPerm = permLevels(userPerms[str(ctx.author.id)])
+        authorPerm = permLevel(userPerms[str(ctx.author.id)])
         try:
-            memberPerm = permLevels(userPerms[str(member.id)])
+            memberPerm = permLevel(userPerms[str(member.id)])
         except:
-            memberPerm = permLevels(0)
+            memberPerm = permLevel.default
 
         if not authorPerm.value > permLevel:
             await ctx.send(f"You do not have sufficient permissions for this action, {ctx.author.mention}")
@@ -254,11 +254,11 @@ class permissions:
             save_permissions()
 
     @perms.command(name="get")
-    @permissionCheck(2)
+    @permissionCheck(permLevel.operator)
     async def perms_get(self, ctx, *members:discord.Member):
         for member in members:
             try:
-                memberPerm = permLevels(userPerms[str(member.id)])
+                memberPerm = permLevel(userPerms[str(member.id)])
             except:
                 await ctx.send(f"{member} is a default user")
             else:
@@ -317,7 +317,7 @@ class polls:
         return ID
 
     @commands.command()
-    @permissionCheck(0)
+    @permissionCheck(permLevel.default)
     async def poll(self, ctx, name, *alternatives):
         poll = pollInstance(ctx, name, self.create_ID(), 0)
         for value in alternatives:
@@ -326,12 +326,12 @@ class polls:
         poll.send()
 
     @commands.group(invoke_without_command=True)
-    @permissionCheck(0)
+    @permissionCheck(permLevel.default)
     async def activepoll(self, ctx):
         await ctx.send("```No subcommand of activepoll was passed.\nUsage: !activepoll <subcommand> [args...]\nFor more information use !help activepoll <subCommand>```")
 
     @activepoll.command(name="create")
-    @permissionCheck(2)
+    @permissionCheck(permLevel.operator)
     async def activepoll_create(self, ctx, name, reqPerm:int=0, *options):
         entries = []
         for value in options:
@@ -341,7 +341,7 @@ class polls:
 
 
     @activepoll.command(name="add")
-    @permissionCheck(0)
+    @permissionCheck(permLevel.default)
     async def activepoll_add(self, ctx, *, entry):
         if ctx.channel not in self.current.keys():
             await ctx.send(f"There is currently not an Active Poll ongoing in this channel, {ctx.author.mention}")
@@ -352,12 +352,12 @@ class music:
         self.bot = bot
 
     @commands.command()
-    @permissionCheck(0)
+    @permissionCheck(permLevel.default)
     async def play(self, ctx, *, song : str):
         pass
 
     @commands.command()
-    @permissionCheck(0)
+    @permissionCheck(permLevel.default)
     async def pause(self, ctx):
         if ctx.author.voice:
             channel = ctx.author.voice.channel
