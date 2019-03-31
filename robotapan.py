@@ -86,11 +86,11 @@ class baseBot:
                 if token == data["token"]:
                     self.name = data["name"]
                     self.bot.command_prefix = commands.when_mentioned_or(data["prefix"])
-    
+
     def sPrint(self, *args, **kwargs):
         print(self.name+">::", " ".join(map(str,args)), **kwargs)
 
-    async def on_ready(self):   
+    async def on_ready(self):
         self.sPrint(f'Logged in as: {self.bot.user.name}')
         self.sPrint(f"ID: {self.bot.user.id}")
         self.sPrint('Servers: ', end='')
@@ -110,7 +110,7 @@ class baseBot:
             await ctx.send("```Permissions successfully reloaded```")
         else:
             await ctx.send("```Permission reload unsuccessful```")
-        
+
     @commands.command(hidden=True)
     @commands.is_owner()
     async def test(self, ctx):
@@ -140,7 +140,7 @@ class voiceSender(baseBot):
     async def on_ready(self):
         await super().on_ready()
         await self.bot.change_presence(status=discord.Status.invisible)
-        
+
     async def start(self):
         await self.bot.start(self.token)
 
@@ -154,9 +154,9 @@ class voiceSender(baseBot):
                 self.connection == await self.channel.connect()
 
             await entry.song#plays the song
-            
+
             if self.playlist.qsize() == 0:
-                return 
+                return
                 await self.connection.disconnect()
                 self.connection = None
                 await self.bot.change_presence(status=discord.Status.invisible)
@@ -169,7 +169,7 @@ class voiceSender(baseBot):
 class mainBot(baseBot):
     def __init__(self):
         super().__init__(
-            commands.Bot(command_prefix=commands.when_mentioned_or('!'), description=''), 
+            commands.Bot(command_prefix=commands.when_mentioned_or('!'), description=''),
             config["maintoken"]
             )
 
@@ -185,11 +185,11 @@ class mainBot(baseBot):
         self.players = {}
         #self.bot.loop.create_task(self.spawnSubs())
 
-    
+
     async def spawnSubs(self):
         if not self.bot.is_ready():
             await self.bot.wait_until_ready()
-            
+
         for data in config["subbots"]:
             channel = self.bot.get_channel(data["channel"])
             sub = voiceSender(self.bot.user.name, channel, data["token"])
@@ -199,7 +199,7 @@ class mainBot(baseBot):
 
     @commands.command()
     @permissionCheck(4)
-    async def quit(self, ctx):
+    async def stop(self, ctx):
         raise KeyboardInterrupt
 
 
@@ -221,7 +221,7 @@ class mainBot(baseBot):
         curTime = datetime.datetime(*[time.gmtime()[i] for i in range(6)])
 
         embed = discord.Embed(
-            title=":bar_chart:** How should this poll look? **:bar_chart:", 
+            title=":bar_chart:** How should this poll look? **:bar_chart:",
             description=description, timestamp=curTime)
         embed.set_footer(text=f"Created by {ctx.author.name}")
         message = await ctx.send(embed=embed)
@@ -293,7 +293,7 @@ class pollInstance:
                 if entry["author"]:
                     end = f", {entry['author'].mention}"
                 description += f"**{i+1}.** \"{entry['value']}\"{end}\n"
-            return description            
+            return description
 
         def add(self, entry, author):
             self.entries.append({"entry":entry, "author"=author})
@@ -304,7 +304,7 @@ class pollInstance:
         async def send(self, channel, pin=False):
             if self.message:
                 return False
-            
+
 
 class polls:
     def __init__(self):
@@ -324,7 +324,7 @@ class polls:
             poll.add(value, None)
         poll.createDescription()
         poll.send()
-        
+
     @commands.group(invoke_without_command=True)
     @permissionCheck(0)
     async def activepoll(self, ctx):
@@ -337,7 +337,7 @@ class polls:
         for value in options:
             entries.append({"value":value, "name": None})
         poll = pollInstance(ctx, name, reqPerm, entries)
-        
+
 
 
     @activepoll.command(name="add")
